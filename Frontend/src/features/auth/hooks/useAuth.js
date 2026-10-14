@@ -7,6 +7,11 @@ import { login, register, logout, getMe } from "../services/auth.api";
 export const useAuth = () => {
 
     const context = useContext(AuthContext)
+
+    if (!context) {
+        throw new Error("useAuth must be used within an AuthProvider")
+    }
+
     const { user, setUser, loading, setLoading } = context
 
 
@@ -30,9 +35,13 @@ export const useAuth = () => {
         setLoading(true)
         try {
             const data = await register({ username, email, password })
+            if (!data?.user) {
+                return false
+            }
             setUser(data.user)
+            return true
         } catch (err) {
-
+            return false
         } finally {
             setLoading(false)
         }
@@ -41,10 +50,11 @@ export const useAuth = () => {
     const handleLogout = async () => {
         setLoading(true)
         try {
-            const data = await logout()
+            await logout()
             setUser(null)
+            return true
         } catch (err) {
-
+            return false
         } finally {
             setLoading(false)
         }
@@ -54,10 +64,15 @@ export const useAuth = () => {
 
         const getAndSetUser = async () => {
             try {
-
                 const data = await getMe()
-                setUser(data.user)
-            } catch (err) { } finally {
+                if (data?.user) {
+                    setUser(data.user)
+                    return
+                }
+                setUser(null)
+            } catch (err) {
+                setUser(null)
+            } finally {
                 setLoading(false)
             }
         }
